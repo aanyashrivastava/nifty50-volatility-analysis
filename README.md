@@ -21,7 +21,15 @@ The study examines whether NIFTY 50 returns exhibit:
 The analysis was conducted using R and published as an interactive HTML report via GitHub Pages.
 
 ---
+## What This Project Demonstrates
 
+This project simulates a real-world quantitative research workflow:
+
+- Financial time series preprocessing
+- Statistical testing of market inefficiencies
+- Volatility modeling using ARCH-family models
+- Diagnostic validation of model assumptions
+- Interpretation of results in a risk management context
 ## Key Findings
 
 - Daily returns exhibit near-zero linear predictability
