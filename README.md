@@ -1,4 +1,4 @@
-![Preview](preview2.png)
+![Preview](nifty50_banner_hd.png)
 
 ![R](https://img.shields.io/badge/R-276DC3?style=for-the-badge&logo=r&logoColor=white)
 ![GARCH](https://img.shields.io/badge/Model-GARCH-blue)
