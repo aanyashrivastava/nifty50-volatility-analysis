@@ -1,8 +1,11 @@
+# Quantitative Volatility Research: NIFTY 50 (ARCH/GARCH Framework)
 ![Preview](nifty50_banner_hd.png)
 
 ![R](https://img.shields.io/badge/R-276DC3?style=for-the-badge&logo=r&logoColor=white)
 ![GARCH](https://img.shields.io/badge/Model-GARCH-blue)
 ![Status](https://img.shields.io/badge/Project-Completed-brightgreen)
+
+Econometric investigation of market volatility, fat tails, and conditional variance dynamics using real Indian equity data.
 
 ## Overview
 
