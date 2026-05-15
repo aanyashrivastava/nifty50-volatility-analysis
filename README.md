@@ -53,7 +53,12 @@ The analysis was conducted using R and published as an interactive HTML report v
 - FinTS
 - zoo
 - knitr
+---
+## Research Questions
 
+1. Does the NIFTY 50 exhibit volatility clustering?
+2. Are returns normally distributed or fat-tailed?
+3. Which model performs better: ARCH or constant variance?
 ---
 
 ## Live Report
