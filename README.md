@@ -66,7 +66,12 @@ The analysis was conducted using R and published as an interactive HTML report v
 [View Full HTML Report](https://aanyashrivastava.github.io/NIFTY50-Volatility-Analysis/)
 
 ---
+## Answers Summary
 
+- Strong volatility clustering is present  
+- Returns are fat-tailed (non-Gaussian)  
+- ARCH-family models significantly outperform constant variance models
+---
 ## Repository Structure
 
 ```text
