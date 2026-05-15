@@ -91,7 +91,17 @@ Volatility modelling is central to:
 - Risk management (VaR models)
 - Algorithmic trading strategies
 - Portfolio hedging
-  
+---
+## Industry Relevance
+
+This type of analysis is directly used in:
+
+- Quantitative trading strategies
+- Options pricing & implied volatility modelling
+- Risk management (VaR models)
+- Portfolio hedging decisions
+---
+
 ## Repository Structure
 
 ```text
