@@ -1,5 +1,9 @@
 ![Preview](preview2.png)
 
+![R](https://img.shields.io/badge/R-276DC3?style=for-the-badge&logo=r&logoColor=white)
+![GARCH](https://img.shields.io/badge/Model-GARCH-blue)
+![Status](https://img.shields.io/badge/Project-Completed-brightgreen)
+
 ## Overview
 
 This project analyzes the statistical properties and volatility dynamics of NIFTY 50 daily log returns from 2007–2025 using econometric and time-series methods in R.
