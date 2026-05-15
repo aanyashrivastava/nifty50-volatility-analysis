@@ -1,0 +1,685 @@
+---
+title: "NIFTY 50 Return Distribution and Volatility Analysis"
+author: "Aanya Shrivastava"
+
+output:
+  html_document:
+    css: style.css
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: flatly
+    highlight: tango
+---
+
+
+
+
+# Introduction
+
+**This report analyzes the daily log returns of the NIFTY 50 index over the period 2007–2025 to examine key characteristics of financial market behavior, including return predictability, stationarity, volatility persistence, and tail risk.** Using econometric and time-series techniques such as autocorrelation analysis, Jarque–Bera testing, Ljung–Box diagnostics, and ARCH effect detection, the study investigates **whether NIFTY 50 returns exhibit characteristics consistent with weak-form market efficiency while simultaneously exploring the persistence and structure of market volatility.**
+
+The statistical properties examined in this report are consistent with several well-documented stylized facts in financial econometrics. **The concept of weak-form market efficiency was formalized by Eugene Fama (1970), while Mandelbrot (1963) and later Cont (2001) documented the presence of fat tails and volatility persistence across financial markets.** This study evaluates whether similar statistical characteristics are present within the NIFTY 50 return series over the sample period.
+
+The analysis aims to understand **how market risk evolves over time** and **how major periods of financial stress — including the 2008 Global Financial Crisis and the 2020 COVID-19 shock — are reflected in the statistical structure of NIFTY 50 returns.**
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center"
+)
+
+library(quantmod)
+library(tseries)
+library(FinTS)
+library(moments)
+library(zoo)
+library(knitr)
+
+```
+
+
+# Summary of findings
+
+This study examines 18 years of daily NIFTY 50 log returns (2007–2026, n = 4,534) to evaluate whether financial returns conform to the classical assumptions of normality, serial independence, and constant variance. All three assumptions are violated. Returns exhibit extreme excess kurtosis of 15.15 and significant ARCH effects (χ² = 629.87, p < 2.2 × 10⁻¹⁶), confirming fat-tailed, heteroscedastic behaviour inconsistent with Gaussian risk models — which materially underestimate tail losses at the 99th percentile. Return direction remains largely unpredictable, broadly consistent with weak-form market efficiency, yet market volatility is highly persistent, regime-dependent, and asymmetric, with negative shocks generating disproportionately larger variance responses consistent with Black's (1976) leverage effect. The central implication is that NIFTY 50 returns are directionally unpredictable but structurally risky — a distinction with direct consequences for Value-at-Risk estimation, capital adequacy, and the conditional volatility modeling developed in subsequent work.
+
+
+
+# Data and methodology
+
+```{r, echo=FALSE}
+
+library(knitr)
+
+load("../data/nifty_price.RData")
+
+data_summary <- data.frame(
+  Metric = c("Index",
+             "Frequency",
+             "Sample Start",
+             "Sample End",
+             "Observations"),
+  
+  Value = c("NIFTY 50",
+            "Daily",
+            as.character(start(price)),
+            as.character(end(price)),
+            length(price))
+)
+
+kable(data_summary,
+      caption = "Summary of NIFTY 50 Dataset Used in the Analysis",
+      align = c("l", "c"))
+```
+
+The dataset consists of daily closing prices of the NIFTY 50 index across the sample period. The adjusted closing price series was **transformed into continuously compounded logarithmic returns for subsequent statistical and econometric analysis.**
+
+The analysis uses daily closing prices of the NIFTY 50 index over the sample period from 2007 to 2025. **To examine the statistical structure of market movements, the raw price series was transformed into continuously compounded logarithmic returns using:**
+
+$$
+r_t = \ln\left(\frac{P_t}{P_{t-1}}\right)
+$$
+
+where \( P_t \) represents the closing price at time \( t \).
+
+The transformed return series was subsequently analyzed using descriptive statistics, distributional tests, autocorrelation analysis, and volatility diagnostics to examine the behavior of NIFTY 50 returns and market 
+risk dynamics over time.
+
+
+
+## Analytical framework
+**The analysis follows a sequential econometric framework designed to examine the statistical structure, dependence behavior, and volatility dynamics of NIFTY 50 returns.**
+
+- The transformed log return series was first evaluated using descriptive statistics and distributional diagnostics to assess skewness, kurtosis, and deviations from normality. Histogram analysis, Q-Q plots, and the Jarque–Bera test were used to examine whether the return distribution exhibits heavy tails and non-Gaussian behavior commonly observed in financial markets.
+
+- Stationarity of the return series was then tested using the Augmented Dickey–Fuller (ADF) test to ensure that the statistical properties of the series remain sufficiently stable for time-series modeling and dependence analysis.
+
+- Autocorrelation analysis was subsequently performed using the autocorrelation function (ACF), partial autocorrelation function (PACF), and Ljung–Box diagnostics to investigate serial dependence and assess the extent to which past returns contain predictive information about future returns.
+
+- To evaluate volatility persistence and time-varying variance behavior, the analysis further examined squared returns and conducted ARCH effect testing. The ARCH test was used to determine whether conditional heteroscedasticity exists within the return series, providing evidence for volatility clustering and persistent market risk dynamics commonly observed in financial time series.
+
+
+
+## Log returns ( \( r_t \) )
+
+```{r, echo=FALSE}
+
+load("../data/nifty_price.RData")
+
+# Compute log returns
+log_returns <- diff(log(price))
+
+# Remove NA values
+ret <- na.omit(as.numeric(log_returns))
+```
+
+```{r, echo=FALSE}
+
+library(knitr)
+
+sample_returns <- data.frame(
+  Observation = 1:6,
+  Log_Return = round(ret[1:6], 6)
+)
+
+kable(sample_returns,
+      caption = "Sample of Initial NIFTY 50 Log Returns",
+      align = c("c", "c"))
+```
+
+The analysis was conducted using **log returns due to financial prices being non-stationary and exhibiting long-term trending behavior,** making them unsuitable for direct statistical modeling. **By transforming prices into log returns, the analysis focuses on the day-to-day percentage movement of the market rather than the absolute index level.** Log returns fluctuate around a relatively stable mean.
+
+The utilisation of log returns enables proper analysis of distribution of returns, market efficiency, dependence of returns and risk dynamics. Additionally, **log returns allow multi-period returns to be aggregated consistently and capture proportional price changes more accurately than arithmetic returns.**
+
+
+
+## Descriptive statistics
+
+```{r, echo=FALSE}
+
+library(knitr)
+library(moments)
+
+desc_stats <- data.frame(
+  Statistic = c("Observations",
+                "Mean",
+                "Standard Deviation",
+                "Skewness",
+                "Excess Kurtosis",
+                "Minimum",
+                "Maximum"),
+  
+  Value = c(length(ret),
+            round(mean(ret), 6),
+            round(sd(ret), 6),
+            round(skewness(ret), 4),
+            round(kurtosis(ret) - 3, 4),
+            round(min(ret), 4),
+            round(max(ret), 4))
+)
+
+kable(desc_stats,
+      caption = "Descriptive Statistics of NIFTY 50 Log Returns",
+      align = c("l", "c"))
+```
+
+The return distribution exhibits **mild negative skewness (−0.29)**, indicating that **downside movements tend to be slightly more pronounced than upward movements.**Market declines may occur more abruptly during periods of stress or uncertainty and risk exposure for investors remains asymmetric.
+
+More significantly, **the series displays extremely high excess kurtosis (≈15.15), reflecting strong fat-tailed behavior and a substantially higher frequency of extreme observations relative to a normal distribution.** It implies large drawdowns and sudden volatility spikes are structurally embedded within the return process.
+
+Together, the presence of negative skewness and extreme kurtosis suggests that the NIFTY 50 exhibits asymmetric downside risk alongside substantial tail risk. **While average daily fluctuations remain relatively small, the market remains vulnerable to infrequent but severe shocks that occur with greater probability than implied by a normal distribution.**
+
+
+
+# Distribution analysis 
+## histogram & normality overlay
+
+
+```{r, echo=FALSE, fig.align='center', fig.width=8, fig.height=5}
+
+hist(ret, breaks = 100, freq = FALSE,
+     main = "NIFTY 50 Log Returns Distribution",
+     xlab = "Log Return",
+     col = "#B5D4F4",
+     border = "white")
+
+curve(dnorm(x, mean(ret), sd(ret)),
+      add = TRUE, col = "red", lwd = 2)
+
+abline(v = mean(ret), col = "darkgreen", lwd = 2)
+
+legend("topright",
+       legend = c("Empirical Distribution", "Normal Distribution", "Mean"),
+       col = c("#B5D4F4", "red", "darkgreen"),
+       lwd = c(10, 2, 2),
+       bty = "n")
+```
+
+
+**Key Observations:**
+
+- The return distribution exhibits **leptokurtosis**, indicating excess kurtosis relative to the normal distribution.  
+- There is a clear **deviation from normality**, as the empirical distribution does not align with the Gaussian benchmark.  
+- Returns show **strong central clustering**, reflected in a sharper peak around the mean.  
+- The distribution displays **fat tails**, implying a higher probability of extreme market movements.  
+- A mild **negative skewness** is observed, suggesting that downside movements are slightly more pronounced than upside movements.  
+
+
+
+The distribution of NIFTY 50 log returns appears roughly bell-shaped, but it clearly **does not align with a normal distribution.** The center of the histogram is more sharply peaked than the Gaussian curve, suggesting that **a large proportion of returns are concentrated close to the mean.**
+
+At the same time, the tails are noticeably heavier than those of a normal distribution, indicating the presence of **excess kurtosis.** In practical terms, this means that **large market moves—both positive and negative—occur more often than what a normal model would predict.**
+
+There is also a slight asymmetry in the distribution, with a mild negative skew. This suggests that **downward movements tend to be somewhat more pronounced than upward movements,** which is consistent with typical equity market behavior.
+
+**Overall, the pattern reflects a common feature of financial return series: most days see relatively small changes, but these are occasionally interrupted by sharp movements. This deviation from normality is important, as models based on Gaussian assumptions tend to underestimate the likelihood of extreme events.**
+
+
+
+## Q–Q Plot analysis
+```{r, echo=FALSE, fig.align='center', fig.width=8, fig.height=5}
+qqnorm(ret, main = "Q-Q Plot of NIFTY 50 Log Returns")
+qqline(ret, col = "purple", lwd = 2)
+```
+
+
+**The Q–Q plot compares the empirical distribution of returns with a theoretical normal distribution.** While the central observations lie reasonably close to the reference line, noticeable deviations occur in the tails.
+
+These deviations indicate that **extreme values are more frequent than would be expected under normality,** providing visual evidence of fat tails. This behavior is **consistent with the presence of excess kurtosis observed earlier.**
+
+
+
+## Normality test: Jarque-Bera
+The Jarque-Bera test is a method for testing if the normality assumption is reasonable
+
+$$
+H_0 : \text{Returns are normally distributed}
+$$
+
+$$
+H_1 : \text{Returns are not normally distributed}
+$$
+```{r echo=FALSE, results='hide'}
+jb_result <- jarque.bera.test(ret)
+```
+
+<div class="result-box">
+<b>Jarque–Bera Test Results:</b><br>
+JB statistic = `r round(jb_result$statistic, 3)`<br>
+p-value = `r signif(jb_result$p.value, 4)`
+</div>
+
+**The Jarque–Bera test strongly rejects the null hypothesis (H₀) that NIFTY 50 returns are normally distributed (χ² = 43439, p-value < 2.2e−16).** Consequently, the alternative hypothesis (H₁) is accepted, indicating significant departures from a Gaussian distribution.
+
+The rejection of normality is largely driven by the extreme **excess kurtosis observed in the return series, reflecting the presence of pronounced fat tails and clustered extreme observations. This suggests that large market shocks occur materially more frequently than would be predicted under standard normal assumptions.**
+
+From a market perspective, the findings imply that **tail-risk events and volatility shocks are structurally embedded within the NIFTY 50 return process.** 
+
+
+
+# Time series properties
+
+## Augmented Dickey-Fuller test
+The following test determines whether a given time series is stationary.
+$$
+H_0 : \text{Series is non-stationary}
+$$
+
+$$
+H_1 : \text{Series is stationary}
+$$
+```{r echo=FALSE, results='hide'}
+adf_result <- adf.test(ret)
+```
+
+<div class="result-box">
+<b>ADF Test Results:</b><br>
+Test statistic = `r round(adf_result$statistic, 3)`<br>
+Reported p-value = `r adf_result$p.value`
+</div>
+
+**The Augmented Dickey–Fuller (ADF) test strongly rejects the null hypothesis of a unit root, indicating that the NIFTY 50 return series is stationary.** The reported p-value of **0.01** represents the lower boundary reported by the test procedure, implying that the **true p-value is less than or equal to 0.01.**
+
+This result suggests that the statistical properties of the return series remain sufficiently stable over time for meaningful time-series and volatility analysis. In practical terms, **while the raw NIFTY 50 price index exhibits long-term trending behavior, the transformed log return series fluctuates around a relatively stable structure suitable for econometric modeling.**
+
+
+## Autocorrelational analysis
+
+```{r, echo=FALSE, fig.align='center', fig.width=8, fig.height=5}
+acf(ret, main = "ACF of Returns")
+```
+
+The autocorrelation function (ACF) of NIFTY 50 returns shows that **most autocorrelation coefficients remain close to zero and largely within the 95% confidence bounds, indicating the absence of strong linear dependence in returns.**
+
+Although the Ljung–Box test later detects statistically significant autocorrelation, **the magnitude of the observed dependence remains extremely small. Given the large sample size, even minor deviations from perfect independence become statistically detectable.** 
+
+In practical terms, the return process still exhibits **limited exploitable predictability** and remains broadly consistent with **weak-form market efficiency.**
+
+
+## Autocorrelation function of squared returns
+
+```{r,echo=FALSE, fig.align='center', fig.width=8, fig.height=5}
+acf(ret^2, main = "ACF of Squared Returns")
+```
+
+
+**The ACF of squared returns exhibits significant positive autocorrelation, indicating strong persistence in volatility and clear evidence of volatility clustering within the NIFTY 50.** Periods of elevated market risk tend to be followed by further high-volatility periods, while calmer market phases are followed by relatively stable conditions.
+
+This behavior reflects **heteroscedasticity,** where the **variance of returns changes over time rather than remaining constant.**
+
+In practical market terms, this suggests that **uncertainty and risk in the NIFTY 50 are persistent rather than random.** During periods of macroeconomic stress **heightened volatility tends to sustain itself across multiple trading sessions instead of dissipating immediately.**
+
+
+
+## Partial autocorrelational function of squared values
+
+```{r,echo=FALSE, fig.align='center', fig.width=8, fig.height=5}
+library(tseries)
+pacf(ret^2, lag.max = 40,
+     main = "PACF of Squared Returns")
+
+
+```
+
+ 
+**The PACF of squared returns reveals significant dependence concentrated within the initial lag structure, indicating that recent volatility shocks exert direct influence on current market variance even after controlling for intermediate lag effects.** The partial autocorrelations decline substantially after approximately lags 5–7, suggesting that **volatility dependence in the NIFTY 50 is primarily driven by relatively recent market conditions rather than distant historical shocks.**
+
+From a modeling perspective, the observed cutoff pattern provides preliminary evidence that a low-order ARCH specification such as ARCH(5) or ARCH(7) may reasonably capture the short-term conditional variance dynamics present in the return series. More parsimonious volatility frameworks such as GARCH(1,1) may also provide an effective approximation of the persistent volatility behavior observed in the data.
+
+
+# Hypothesis testing:
+## Hypothesis 1: Mean Return equals 0 (t-test)
+
+The one-sample t-test examines whether the average daily log return of the NIFTY 50 is statistically different from zero.
+
+$$
+H_0 : \mu = 0
+$$
+
+$$
+H_1 : \mu \neq 0
+$$
+
+
+
+```{r echo=FALSE, results='hide'}
+t_test <- t.test(ret)
+
+cat("t-statistic:", t_test$statistic, "\n")
+cat("p-value:", t_test$p.value, "\n")
+cat("Sample Mean:", mean(ret), "\n")
+```
+
+<div class="result-box">
+<b>t-test results:</b><br>
+t-statistic = 1.776<br>
+p-value = 0.0759<br>
+Sample mean return = 0.000343
+</div>
+
+- **The one-sample t-test fails to reject the null hypothesis (H₀)** that the mean daily return of the NIFTY 50 is equal to zero **(p-value = 0.0759).**
+
+$$
+p = 0.07587 > 0.05
+$$
+
+- Statistically, the mean return is not significantly different from zero at the 5% significance level. This suggests that **short-term daily returns fluctuate closely around zero without exhibiting a persistent directional drift.**
+
+- **Day-to-day price movements in the NIFTY 50 are largely driven by random market fluctuations rather than predictable excess returns.**
+
+
+
+## Hypothesis 2: Independence of returns (Ljung-Box test)
+
+The Ljung–Box test is used to determine whether a time series exhibits significant autocorrelation across multiple lags.It evaluates the joint signif
+icance of autocorrelations collectively.
+
+
+$$
+H_0 : \text{No autocorrelation exists (returns are independent)}
+$$
+
+$$
+H_1 : \text{Autocorrelation exists}
+$$
+
+```{r echo=FALSE, results='hide'}
+lb_ret <- Box.test(ret, lag = 20, type = "Ljung-Box")
+```
+
+<div class="result-box">
+<b>Ljung–Box Test on Returns:</b><br>
+Test statistic = `r round(lb_ret$statistic, 3)`<br>
+p-value = `r signif(lb_ret$p.value, 4)`
+</div>
+
+**The Ljung–Box test rejects the null hypothesis of no autocorrelation, but, the empirical ACF coefficients remain extremely small in magnitude and largely concentrated within the confidence bounds.** Given the large sample size (\(n = 4534\)), the Ljung–Box statistic is highly sensitive to even minor deviations from perfect independence.
+
+As a result, **the statistical significance detected by the test does not necessarily imply economically meaningful predictability in returns**. In practical terms, **the observed dependence structure remains weak** and broadly consistent with the notion that **short-term NIFTY 50 returns exhibit limited exploitable linear predictability.**
+
+
+
+## Ljung–Box Diagnostics on returns and squared Returns
+
+```{r ljung_box_tests, echo=FALSE, results='hide'}
+# Ljung-Box on returns
+lb_ret <- Box.test(ret,
+                   lag = 20,
+                   type = "Ljung-Box")
+
+# Ljung-Box on squared returns
+lb_sq <- Box.test(ret^2,
+                  lag = 20,
+                  type = "Ljung-Box")
+```
+
+<div class="result-box">
+<b>Ljung–Box Test on Returns:</b><br>
+Test statistic = `r round(lb_ret$statistic, 3)`<br>
+p-value = `r signif(lb_ret$p.value, 4)`
+</div>
+
+<div class="result-box">
+<b>Ljung–Box Test on Squared Returns:</b><br>
+Test statistic = `r round(lb_sq$statistic, 3)`<br>
+p-value = `r signif(lb_sq$p.value, 4)`
+</div>
+
+
+The Ljung–Box diagnostics reveal a **fundamental asymmetry in the statistical behavior of NIFTY 50 returns and volatility.** While **raw returns exhibit only economically weak autocorrelation** despite statistical significance, **squared returns display extremely strong serial dependence across time.**
+
+This distinction implies that **short-term market direction remains largely difficult to predict, broadly consistent with weak-form market efficiency.** However, market volatility itself exhibits substantial persistence and predictability, indicating that **periods of elevated risk tend to cluster rather than occur randomly.**
+
+In practical terms, the results suggest that **although investors may struggle to consistently forecast whether the market will rise or fall tomorrow, the underlying level of market uncertainty and risk evolves in a highly structured and time-dependent manner.**
+
+
+
+## Hypothesis 3: Volatility clustering (ARCH Test)
+
+The ARCH (Autoregressive Conditional Heteroscedasticity) test examines whether the variance of returns remains constant over time or changes systematically.
+
+$$
+H_0 : \text{No ARCH effects exist (constant variance)}
+$$
+
+$$
+H_1 : \text{ARCH effects exist (variance is time-varying)}
+$$
+
+```{r arch_lm_test, echo=FALSE, results='hide'}
+arch_result <- ArchTest(ret, lags = 12)
+```
+
+<div class="result-box">
+<b>ARCH LM Test Results:</b><br>
+Test statistic = `r round(arch_result$statistic, 3)`<br>
+p-value = `r signif(arch_result$p.value, 4)`
+</div>
+
+
+
+```{r volatility_plot, echo=FALSE, warning=FALSE, message=FALSE}
+plot(log_returns^2,
+     type = "l",
+     col = "darkred",
+     lwd = 1.5,
+     main = "Volatility Clustering in NIFTY 50 Returns",
+     ylab = "Squared Returns",
+     xlab = "Year")
+```
+
+
+
+
+
+
+**The ARCH LM test strongly rejects the null hypothesis of constant variance (χ² = 629.87, p-value < 2.2 × 10⁻¹⁶). This confirms the presence of significant ARCH effects in the NIFTY 50 return series.** 
+
+The ARCH LM test strongly rejects the null hypothesis of constant variance, providing **significant evidence of conditional heteroscedasticity** within the NIFTY 50 return series.
+
+In practical terms, **periods of elevated market uncertainty tend to cluster across consecutive trading sessions rather than dissipating immediately after a shock.** Such behavior is characteristic of financial markets, where **large market movements are frequently followed by further periods of heightened volatility.** The presence of significant ARCH effects further suggests that **constant-variance models may inadequately capture the evolving risk dynamics of the NIFTY 50, reinforcing the suitability of conditional volatility frameworks** for modeling market risk and volatility persistence.
+
+The significant ARCH effects confirm that **conditional variance in the NIFTY 50 is time-dependent, with volatility shocks propagating persistently through the return series.**
+
+
+# Modeling implications for risk estimation
+
+```{r, echo=FALSE}
+
+library(knitr)
+
+# Historical (empirical) VaR
+hist_var_95 <- quantile(ret, 0.05)
+hist_var_99 <- quantile(ret, 0.01)
+
+# Gaussian VaR
+mu <- mean(ret)
+sigma <- sd(ret)
+
+norm_var_95 <- qnorm(0.05, mean = mu, sd = sigma)
+norm_var_99 <- qnorm(0.01, mean = mu, sd = sigma)
+
+# Underestimation
+under_95 <- abs((norm_var_95 - hist_var_95) / hist_var_95) * 100
+under_99 <- abs((norm_var_99 - hist_var_99) / hist_var_99) * 100
+
+# Table
+var_table <- data.frame(
+  Confidence_Level = c("95%", "99%"),
+  
+  Historical_VaR = round(c(hist_var_95, hist_var_99)*100, 2),
+  
+  Gaussian_VaR = round(c(norm_var_95, norm_var_99)*100, 2),
+  
+  Underestimation_Percent = round(c(under_95, under_99), 2)
+)
+
+colnames(var_table) <- c(
+  "Confidence Level",
+  "Historical VaR (%)",
+  "Gaussian VaR (%)",
+  "Underestimation (%)"
+)
+
+kable(var_table,
+      caption = "Comparison of Historical and Gaussian Value-at-Risk Estimates")
+```
+
+
+
+**The comparison demonstrates that Gaussian risk models systematically underestimate downside market risk within the NIFTY 50 due to the heavy-tailed nature of the return distribution.** The divergence becomes substantially larger at the 99% confidence level, where extreme negative returns occur more frequently than predicted under normality assumptions.
+
+**This result highlights a key limitation of constant-variance Gaussian frameworks** commonly used in traditional risk management. While such models may approximate average market behavior reasonably well, **they fail to adequately capture the magnitude and frequency of tail events observed during periods of financial stress.** The findings therefore reinforce the importance of employing heavy-tailed or conditional volatility models when estimating financial market risk in practice.
+
+
+
+# Asymmetric Volatility and the Leverage Effect
+
+```{r, echo=FALSE, fig.align='center', fig.width=10, fig.height=5}
+
+library(zoo)
+
+# Clean aligned series
+ret_xts <- na.omit(log_returns)
+
+# Rolling volatility
+rolling_vol <- rollapply(ret_xts,
+                         width = 30,
+                         FUN = sd,
+                         align = "right",
+                         fill = NA)
+
+# Remove NA values
+rolling_vol <- na.omit(rolling_vol)
+
+# Colors based on return sign
+cols <- ifelse(coredata(ret_xts[index(rolling_vol)]) < 0,
+               "red",
+               "darkgreen")
+
+# Plot
+plot(index(rolling_vol),
+     coredata(rolling_vol),
+     type = "h",
+     col = cols,
+     lwd = 1,
+     main = "Rolling Volatility and Return Asymmetry",
+     xlab = "Year",
+     ylab = "30-Day Rolling Volatility")
+
+legend("topright",
+       legend = c("Negative Returns", "Positive Returns"),
+       col = c("red", "darkgreen"),
+       lwd = 2,
+       bty = "n")
+```
+
+
+
+```{r leverage_correlation, echo=FALSE, results='hide'}
+# Lagged return vs future squared return correlation
+leverage_corr <- cor(ret[-length(ret)],
+                     ret[-1]^2)
+```
+
+<div class="result-box">
+<b>Leverage Effect Correlation:</b><br>
+Correlation between lagged returns and future squared returns = 
+`r round(leverage_corr, 3)`
+</div>
+
+The rolling volatility dynamics of the NIFTY 50 exhibit **noticeable asymmetry between positive and negative market movements, with periods of negative returns frequently associated with elevated subsequent volatility.** To further examine this relationship, **the correlation between lagged returns and future squared returns was computed.**
+
+The observed negative correlation provides empirical support for the **leverage effect originally proposed by Black (1976), where adverse market movements tend to amplify future volatility more strongly than positive movements of comparable magnitude. This asymmetry suggests that downside shocks contribute disproportionately to market uncertainty and volatility persistence within the NIFTY 50.**
+
+While the present analysis does not formally estimate asymmetric volatility models, the observed behavior indicates that frameworks such as **EGARCH** or **GJR-GARCH** may provide a **more realistic representation of NIFTY 50 volatility dynamics by explicitly accounting for asymmetric risk responses.**
+
+
+
+# Discussion
+
+## Market efficiency and risks:
+
+The NIFTY market behaves efficiently in terms of predicting returns, but inefficiently in terms of risk persistence. Returns exhibit limited short-term predictability. Market risk displays substantial structure and persistence, therefore risks are predictable in clusters even if returns are not. Fat tails, high kurtosis and rejection of Jarque-bera test are suggestive of the findings that extreme moves happen more often than normal models expect. Extreme market movements occur more frequently than predicted under Gaussian assumptions, indicating the presence of substantial tail risk within the index. Volatility in the NIFTY 50 is highly time-varying and persistent rather than constant.
+
+Essentially, the findings suggest that the NIFTY 50 behaves as a largely efficient market in terms of return predictability, while simultaneously exhibiting persistent volatility dynamics and elevated exposure to extreme market events.
+
+
+
+## Test of stationarity:
+
+In a non-stationary data set, relationships of data can become inconsistent since the mean can drift and volatility can change, leading to misleading statistical results.
+
+Stationarity tests verify that the return process itself is stable enough to model meaningfully. In the context of the NIFTY 50, raw price levels exhibit strong upward trends and are inherently non-stationary. Testing stationarity on the transformed return series ensures that the observed behavior reflects genuine market dynamics rather than distortions caused by long-term price growth.
+
+
+
+## Volatility clustering:
+
+Volatility clusters because financial markets do not absorb uncertainty instantly. Large shocks to the market tend to create continuing uncertainty, causing elevated risk and price fluctuations to persist across multiple trading sessions rather than disappearing immediately.
+
+Consecutive periods of large market movements create clusters of high volatility. During stable economic periods,market fluctuations remain relatively subdued, resulting in prolonged low-volatility regimes. As a result, volatility becomes time-dependent. Persistence in market risk is what produces volatility clustering in financial return series. ACF of squared returns and ARCH test statistically captured the persistence of market risk in the NIFTY 50 returns.
+
+# Limitations
+
+While the analysis provides strong evidence regarding the statistical behavior of NIFTY 50 returns, several limitations remain.
+
+First, the analysis is entirely linear in nature. Techniques such as the autocorrelation function and Ljung–Box diagnostics detect only linear dependence structures. The absence of strong linear autocorrelation therefore does not eliminate the possibility of non-linear predictability in returns. More advanced approaches such as copula-based dependence modeling or mutual information analysis would be required to examine non-linear relationships.
+
+Second, although the ARCH LM test confirms the presence of conditional heteroscedasticity, the analysis does not formally estimate a conditional volatility model. Extensions using GARCH(1,1), EGARCH, or GJR-GARCH specifications would allow direct estimation of volatility persistence parameters and asymmetric volatility responses.
+
+Third, the leverage effect is demonstrated primarily through rolling volatility behavior and lagged return-volatility correlations rather than through formal asymmetric volatility estimation. A fully specified EGARCH or GJR-GARCH framework would provide statistically testable asymmetry parameters and more rigorous measurement of downside volatility amplification.
+
+Despite these limitations, the analysis successfully captures several major stylized facts of financial returns, including fat tails, volatility clustering, heteroscedasticity, and asymmetric risk behavior.
+
+# Conclusion
+
+This analysis examined the statistical structure and volatility dynamics of NIFTY 50 log returns using a range of econometric and time-series diagnostics. The findings indicate that while short-term return direction remains largely unpredictable and broadly consistent with weak-form market efficiency, market risk itself evolves in a highly persistent and structured manner.
+
+The return distribution exhibits substantial excess kurtosis and pronounced tail behavior, implying that extreme market movements occur significantly more frequently than predicted under Gaussian assumptions. Stationarity testing confirmed that the transformed log return series is suitable for time-series analysis, while autocorrelation diagnostics showed that linear dependence in raw returns remains economically weak despite statistical sensitivity arising from the large sample size.
+
+A central result of the analysis emerges from the Ljung–Box diagnostics applied separately to returns and squared returns. While raw returns display minimal economically meaningful autocorrelation, squared returns exhibit strong serial dependence across time. This asymmetry demonstrates that although market direction itself remains difficult to forecast consistently, volatility and market risk evolve in persistent and predictable clusters. The findings therefore illustrate one of the defining stylized facts of financial markets: returns are approximately unpredictable, but risk is not.
+
+Further analysis of rolling volatility dynamics and lagged return-volatility relationships provided evidence consistent with the leverage effect proposed by Black (1976), where negative market shocks generate disproportionately larger future volatility relative to positive movements of similar magnitude. This suggests that downside market conditions contribute asymmetrically to volatility persistence and risk amplification within the NIFTY 50.
+
+Collectively, the results demonstrate that the NIFTY 50 exhibits many of the core empirical characteristics observed in global equity markets, including heavy tails, volatility clustering, conditional heteroscedasticity, regime-dependent volatility behavior, and asymmetric risk responses. The analysis further highlights the limitations of constant-variance Gaussian frameworks and reinforces the relevance of conditional volatility models for understanding financial market risk dynamics.
+
+
+
+# References
+
+**Black, F. (1976).** *Studies of Stock Price Volatility Changes.* Proceedings of the 1976 Meetings of the American Statistical Association, 177–181.
+
+**Cont, R. (2001).** *Empirical Properties of Asset Returns: Stylized Facts and Statistical Issues.* Quantitative Finance, 1(2), 223–236.
+
+**Engle, R. F. (1982).** *Autoregressive Conditional Heteroscedasticity with Estimates of the Variance of United Kingdom Inflation.* Econometrica, 50(4), 987–1007.
+
+**Fama, E. F. (1970).** *Efficient Capital Markets: A Review of Theory and Empirical Work.* Journal of Finance, 25(2), 383–417.
+
+**Jarque, C. M., & Bera, A. K. (1987).** *A Test for Normality of Observations and Regression Residuals.* International Statistical Review, 55(2), 163–172.
+
+**Ljung, G. M., & Box, G. E. P. (1978).** *On a Measure of Lack of Fit in Time Series Models.* Biometrika, 65(2), 297–303.
+
+**Mandelbrot, B. (1963).** *The Variation of Certain Speculative Prices.* Journal of Business, 36(4), 394–419.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
