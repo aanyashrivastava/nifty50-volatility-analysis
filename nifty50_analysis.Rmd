@@ -53,7 +53,7 @@ This study examines 18 years of daily NIFTY 50 log returns (2007–2026, n = 4,5
 
 library(knitr)
 
-load("../data/nifty_price.RData")
+load("C:/Users/aanya/OneDrive/Desktop/NIFTY_project/nifty_price.RData")
 
 data_summary <- data.frame(
   Metric = c("Index",
@@ -106,7 +106,7 @@ risk dynamics over time.
 
 ```{r, echo=FALSE}
 
-load("../data/nifty_price.RData")
+load("C:/Users/aanya/OneDrive/Desktop/NIFTY_project/nifty_price.RData")
 
 # Compute log returns
 log_returns <- diff(log(price))
