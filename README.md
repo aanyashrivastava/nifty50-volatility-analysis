@@ -1,5 +1,8 @@
 # nifty50-volatility-analysis
+![Project Preview](preview.png).png)
+
 Econometric analysis of NIFTY 50 returns using R: volatility clustering, fat tails, ARCH effects, and market efficiency diagnostics.
+
 ## Overview
 
 This project analyzes the statistical properties and volatility dynamics of NIFTY 50 daily log returns from 2007–2025 using econometric and time-series methods in R.
