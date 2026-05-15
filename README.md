@@ -72,6 +72,15 @@ The analysis was conducted using R and published as an interactive HTML report v
 - Returns are fat-tailed (non-Gaussian)  
 - ARCH-family models significantly outperform constant variance models
 ---
+
+##  Why This Matters
+
+Volatility modelling is central to:
+- Option pricing (Black-Scholes extensions)
+- Risk management (VaR models)
+- Algorithmic trading strategies
+- Portfolio hedging
+  
 ## Repository Structure
 
 ```text
