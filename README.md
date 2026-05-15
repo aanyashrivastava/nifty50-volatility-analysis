@@ -1,5 +1,5 @@
 # nifty50-volatility-analysis
-![Project Preview](preview.png).png)
+![Project Preview](Screenshot 2026-05-15 234736.png)
 
 Econometric analysis of NIFTY 50 returns using R: volatility clustering, fat tails, ARCH effects, and market efficiency diagnostics.
 
