@@ -74,7 +74,7 @@ This project simulates a real-world quantitative research workflow:
 
 ## Live Report
 
-[View Full HTML Report](https://aanyashrivastava.github.io/NIFTY50-Volatility-Analysis/)
+[View Full HTML Report](https://aanyashrivastava.github.io/nifty50-volatility-analysis/)
 
 ---
 ## Answers Summary
